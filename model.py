@@ -1,8 +1,8 @@
 import datetime
 
 class Run():
-    def __init__(self, id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, object_id=None, created_at=None):
-        self.id = id
+    def __init__(self, id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, created_at=None):
+        self.id = id 
         self.object_id = object_id
         self.start_date = start_date
         self.start_date_local = start_date_local
@@ -23,8 +23,7 @@ class Run():
     
     def to_doc(self):
         doc = {
-            "id": self.id,
-            "_id": self._id,
+            "_id": self.id, # Use Strava activity id as MongoDB ObjectId
             "name": self.name,
             "athleteId": self.athlete_id,
             "startDate": self.start_date,
@@ -42,6 +41,7 @@ class Run():
     
     @classmethod
     def from_doc(cls, run_doc):
+        id = run_doc["_id"] # Use Strava activity id as MongoDB ObjectId
         name = run_doc["name"]
         athlete_id = run_doc["athleteId"]
         intania = run_doc["intania"]
@@ -54,9 +54,8 @@ class Run():
         elev_high = run_doc["elevHigh"]
         elev_low = run_doc["elevLow"]
         total_elevation_gain = run_doc["totalElevationGain"]
-        object_id = run_doc["_id"]
         created_at = run_doc["createdAt"]
-        return cls(id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, object_id, created_at)
+        return cls(id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, created_at)
     
     @classmethod
     def from_activity(cls, act, intania):
