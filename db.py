@@ -9,6 +9,7 @@ class ChallengeDB():
     def init(cls, mongodb_uri, database_name):
         cls.MONGO_CLIENT = MongoClient(mongodb_uri)
         cls.DB = eval ("cls.MONGO_CLIENT.%s" % (database_name))
+        print("Initialized database connection")
     
     ###########
     # RUN
