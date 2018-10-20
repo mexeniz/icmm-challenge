@@ -75,11 +75,10 @@ class Run():
         
 
 class Runner():
-    def __init__(self, id, firstname, lastname, intania, code, access_token, _id=None, created_at=None):
+    def __init__(self, id, displayname, intania, code, access_token, created_at=None):
         self.id = id
-        self._id = _id
-        self.firstname = firstname
-        self.lastname = lastname
+        self._id = id
+        self.displayname = displayname
         self.intania = intania
         self.code = code
         self.access_token = access_token
@@ -92,9 +91,7 @@ class Runner():
     def to_doc(self):
         doc = {
             "id": self.id,
-            "_id": self._id,
-            "firstname": self.firstname,
-            "lastname": self.lastname,
+            "displayname": self.displayname,
             "intania": self.intania,
             "code": self.code,
             "accessToken": self.access_token,
@@ -105,11 +102,9 @@ class Runner():
     @classmethod
     def from_doc(cls, runner_doc):
         id = runner_doc["id"]
-        _id = runner_doc["_id"]
-        firstname = runner_doc["firstname"]
-        lastname = runner_doc["lastname"]
+        displayname = runner_doc["displayname"]
         intania = runner_doc["intania"]
         code = runner_doc["code"]
         access_token = runner_doc["accessToken"]
         created_at = runner_doc["createdAt"]
-        return cls(id, firstname, lastname, intania, code, access_token, _id, created_at)
+        return cls(id, displayname, intania, code, access_token, created_at)
