@@ -1,20 +1,20 @@
 import datetime
 
 class Run():
-    def __init__(self, name, athlete_firstname, athlete_lastname, intania, distance, moving_time, elapsed_time, total_elevation_gain, _id=None, virt_id=None, created_at=None):
-        self._id = _id
+    def __init__(self, id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, object_id=None, created_at=None):
+        self.id = id
+        self.object_id = object_id
+        self.start_date = start_date
+        self.start_date_local = start_date_local
         self.name = name
-        self.athlete_firstname = athlete_firstname
-        self.athlete_lastname = athlete_lastname 
-        self.intania = str(intania)
+        self.athlete_id = athlete_id
+        self.intania = intania
         self.distance = distance              # metres - float
         self.moving_time = moving_time        # seconds
         self.elapsed_time = elapsed_time      # seconds
-        self.total_elevation_gain = total_elevation_gain              # metres - float
-        if not virt_id:
-            self.virt_id = "%d_%d_%d_%d" % (int(distance * 10), moving_time, elapsed_time, int(total_elevation_gain * 10))
-        else:
-            self.virt_id = virt_id
+        self.elev_high = elev_high
+        self.elev_low = elev_low
+        self.total_elevation_gain = total_elevation_gain
         
         if not created_at:
             self.created_at = datetime.datetime.now()
@@ -23,14 +23,18 @@ class Run():
     
     def to_doc(self):
         doc = {
-            "virtId": self.virt_id,
+            "id": self.id,
+            "_id": self._id,
             "name": self.name,
-            "athleteFirstname": self.athlete_firstname,
-            "athleteLastname": self.athlete_lastname,
+            "athleteId": self.athlete_id,
+            "startDate": self.start_date,
+            "startDateLocal": self.start_date_local,
             "intania": self.intania,
             "distance": self.distance,
             "movingTime": self.moving_time,
             "elapsedTime": self.elapsed_time,
+            "elevHigh": self.elev_high,
+            "elevLow": self.elev_low,
             "totalElevationGain": self.total_elevation_gain,
             "createdAt" : self.created_at
         }
@@ -39,17 +43,37 @@ class Run():
     @classmethod
     def from_doc(cls, run_doc):
         name = run_doc["name"]
-        athlete_firstname = run_doc["athleteFirstname"]
-        athlete_lastname = run_doc["athleteLastname"]
+        athlete_id = run_doc["athleteId"]
         intania = run_doc["intania"]
+        startDate = run_doc["startDate"]
+        start_date_local = run_doc["startDateLocal"]
         distance = run_doc["distance"]
         moving_time = run_doc["movingTime"]
         elapsed_time = run_doc["elapsedTime"]
-        total_elevation_gain = run_doc["totalElevationGain"]
-        _id = run_doc["_id"]
-        virt_id = run_doc["virtId"]
         created_at = run_doc["createdAt"]
-        return cls(name, athlete_firstname, athlete_lastname, intania, distance, moving_time, elapsed_time, total_elevation_gain, _id, virt_id, created_at)
+        elev_high = run_doc["elevHigh"]
+        elev_low = run_doc["elevLow"]
+        total_elevation_gain = run_doc["totalElevationGain"]
+        object_id = run_doc["_id"]
+        created_at = run_doc["createdAt"]
+        return cls(id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, object_id, created_at)
+    
+    @classmethod
+    def from_activity(cls, act, intania):
+        name = act.name
+        id = str(act.id)
+        athlete_id = str(act.athlete.id)
+        intania = str(intania)
+        start_date = act.start_date
+        start_date_local = act.start_date_local
+        distance = float(act.distance)
+        moving_time = int(act.moving_time.seconds)
+        elapsed_time = int(act.elapsed_time.seconds)
+        elev_high = float(act.elev_high) if act.elev_high is not None else 0.0
+        elev_low = float(act.elev_low) if act.elev_low is not None else 0.0
+        total_elevation_gain = float(act.total_elevation_gain) if act.total_elevation_gain is not None else 0.0
+        return cls(id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain)
+        
 
 class Runner():
     def __init__(self, firstname, lastname, intania, _id=None, created_at=None):
