@@ -3,7 +3,6 @@ import datetime
 class Run():
     def __init__(self, id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, created_at=None):
         self.id = id 
-        self.object_id = object_id
         self.start_date = start_date
         self.start_date_local = start_date_local
         self.name = name

@@ -17,7 +17,10 @@ class ChallengeDB():
     @classmethod
     def find_one_run(cls, query={}):
         run_doc = cls.DB.challenge_runs.find_one(query)
-        return Run.from_doc(run_doc)
+        if run_doc:
+            return Run.from_doc(run_doc)
+        else:
+            return None
 
     @classmethod
     def find_run(cls, query={}):

@@ -24,10 +24,11 @@ def main():
     runs = []
     for runner in runners:
         if runner.intania is None:
-            print("Skip runner with None intania: id=%s name='%s %s'" % (runner.id, runner.firstname, runner.lastname))
+            print("Skip runner with None intania: id=%s displayname='%s'" % (runner.id, runner.displayname))
             continue
         client = Client(access_token=runner.access_token)
         activities = client.get_activities(after=CHALLENGE_START_DATE)
+        print("Get activities: id=%s displayname='%s' intania:'%s'" % (runner.id, runner.displayname, runner.intania))
         for act in activities:
             if act.type != Activity.RUN:
                 continue
@@ -39,7 +40,7 @@ def main():
     for run in runs:
         if ChallengeDB.find_one_run({"id":run.id}) is None:
             # New run activity
-            print("Found new activity: id=%s athlete_id=%s intania=%s" % (run.id, run.athlete_id, run.intania))
+            print("Save new activity: id=%s athlete_id=%s intania=%s" % (run.id, run.distance, run.athlete_id, run.intania))
             ChallengeDB.insert_run(run)
 
 if __name__ == '__main__':
