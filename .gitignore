@@ -102,3 +102,7 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+data/auth_data\.csv
+
+data/intania_clubs\.csv

@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from stravalib.client import Client
 from stravalib.model import Activity
 import csv
