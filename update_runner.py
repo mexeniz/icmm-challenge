@@ -23,13 +23,15 @@ code_dict = {}
 with open(user_csv_path, newline='') as csv_file:
     reader = csv.DictReader(csv_file)
     for row in reader:
-        code_dict[row["user_id"]] = (row["code"], row["user_displayname"])
+        code_dict[row["user_id"]] = (row["code"], row["user_displayname"], row["token"])
         
 users = []
 for user_id, tup in code_dict.items():
-    access_token = Client().exchange_code_for_token(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, code=tup[0])
+    # access_token = Client().exchange_code_for_token(client_id=CLIENT_ID, client_secret=CLIENT_SECRET, code=tup[0])
+    code = tup[0]
     user_displayname = tup[1]
-    user = Runner(user_id, user_displayname, None, tup[0], access_token)
+    token = tup[2]
+    user = Runner(user_id, user_displayname, None, code, token)
     print("ID:", user_id, "Name:", user_displayname)
     users.append(user)
 

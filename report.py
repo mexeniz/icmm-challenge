@@ -11,8 +11,10 @@ from model import Run, Runner
 MONGODB_URI = os.environ["MONGODB_URI"]
 DATABASE_NAME = os.environ["DATABASE_NAME"]
 
+STRING_TIME_FORMAT = "%Y-%b-%d %H:%M:%S"
+
 now = datetime.datetime.now()
-timestamp = now.strftime("%Y-%m-%d %H:%M:%S")
+timestamp = now.strftime(STRING_TIME_FORMAT)
 report_postfix = now.strftime("%Y%m%d_%H%M%S")
 print("Report timestamp:", timestamp)
 
@@ -31,6 +33,9 @@ def gen_run_report(report_path):
         for run in runs:
             row = run.to_doc()
             row["timestamp"] = timestamp
+            row["startDate"] = row["startDate"].strftime(STRING_TIME_FORMAT)
+            row["startDateLocal"] = row["startDateLocal"].strftime(STRING_TIME_FORMAT)
+            row["createdAt"] = row["createdAt"].strftime(STRING_TIME_FORMAT)
             writer.writerow(row)
     print("Total Runs:", len(runs))
     print("Generated report to", report_path)
@@ -45,6 +50,7 @@ def gen_runner_report(report_path):
         for runner in runners:
             row = runner.to_doc()
             row["timestamp"] = timestamp
+            row["createdAt"] = row["createdAt"].strftime(STRING_TIME_FORMAT)
             row = {key:row[key] for key in fieldnames}
             writer.writerow(row)
     print("Total Runners:", len(runners))
