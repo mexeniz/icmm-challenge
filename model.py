@@ -44,7 +44,7 @@ class Run():
         name = run_doc["name"]
         athlete_id = run_doc["athleteId"]
         intania = run_doc["intania"]
-        startDate = run_doc["startDate"]
+        start_date = run_doc["startDate"]
         start_date_local = run_doc["startDateLocal"]
         distance = run_doc["distance"]
         moving_time = run_doc["movingTime"]
