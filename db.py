@@ -40,6 +40,7 @@ class ChallengeDB():
     @classmethod
     def insert_run(cls, run):
         assert type(run) == Run
+        print("Insert Run: id=%s distance=%.2f intania=%s name=%s" % (run.id, run.distance, run.intania, run.name))
         # Get result _id by inserted_id attribute
         return cls.DB.challenge_runs.insert_one(run.to_doc())
     
@@ -64,4 +65,33 @@ class ChallengeDB():
     @classmethod
     def insert_runner(cls, runner):
         assert type(runner) == Runner
+        print("Insert Runner: id=%s displayname=%s intania=%s" % (runner.id, runner.displayname, runner.intania))
         return cls.DB.challenge_runners.insert_one(runner.to_doc())
+
+    @classmethod
+    def update_one_runner(cls, runner, updated_keys=None):
+        assert type(runner) == Runner
+        runner_doc = runner.to_doc()
+        if updated_keys:
+            runner_doc = {key:runner_doc[key] for key in keys}
+        else:
+            # Update all keys except "_id"
+            runner_doc.pop("_id", None)
+        print("Update Runner: id=%s displayname=%s intania=%s" % (runner.id, runner.displayname, runner.intania))
+        return cls.DB.challenge_runners.update_one(
+            {"_id":runner.id},
+            {
+                "$set": runner_doc
+            } 
+            )
+
+    @classmethod
+    def update_one_runner_intania(cls, runner):
+        assert type(runner) == Runner
+        print("Update Runner's Intania: id=%s displayname=%s intania=%s" % (runner.id, runner.displayname, runner.intania))
+        return cls.DB.challenge_runners.update_one(
+            {"_id":runner.id}, 
+            {
+                "$set": {"intania":runner.intania}
+            }
+            )

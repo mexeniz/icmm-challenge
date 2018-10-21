@@ -65,12 +65,18 @@ for user in users:
             user.intania = club_dict[club_id]
             break
 
-    if user.intania:
-        print(user.displayname, "Intania %s" % (user.intania))
-    else:
-        print(user.displayname, "not found intania, skip...")
 
-    # Save to MongoDb
-    ChallengeDB.insert_runner(user)
+    if user.id in mongo_users_dict:
+        # User is in DB
+        if user.intania:
+            # Found intania for user
+            print(user.displayname, "Intania %s" % (user.intania))
+            ChallengeDB.update_one_runner_intania(user)
+        else:
+            print(user.displayname, "not found intania, skip...")
+    else:
+        # New authenticated user
+        # Save to MongoDb
+        ChallengeDB.insert_runner(user)
 
 
