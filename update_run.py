@@ -20,7 +20,8 @@ def main():
     # Read all runners that have intania from DB
     print("Get all runners from db")
     runners = ChallengeDB.find_runner()
-    print("Total runners: %d" % (len(runners)))
+    n_runner = len(runners)
+    print("Total runners: %d" % (n_runner))
     # For each runners get their activities
     runs = []
     for idx, runner in enumerate(runners):
