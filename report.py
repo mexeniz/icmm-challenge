@@ -2,6 +2,7 @@
 import os
 import csv
 import datetime
+import argparse
 from stravalib.client import Client
 from stravalib.model import Activity
 from db import ChallengeDB
@@ -11,11 +12,13 @@ from model import Run, Runner
 MONGODB_URI = os.environ["MONGODB_URI"]
 DATABASE_NAME = os.environ["DATABASE_NAME"]
 
+DEFAULT_OUTPUT_DIR = "./"
+
 STRING_TIME_FORMAT = "%Y-%b-%d %H:%M:%S"
 
 now = datetime.datetime.now()
 timestamp = now.strftime(STRING_TIME_FORMAT)
-report_postfix = now.strftime("%Y%m%d_%H%M%S")
+report_prefix = now.strftime("%Y%m%d_%H%M%S")
 print("Report timestamp:", timestamp)
 
 ChallengeDB.init(MONGODB_URI, DATABASE_NAME)
@@ -57,10 +60,19 @@ def gen_runner_report(report_path):
     print("Generated report to", report_path)
 
 def main():
-    runner_report_path = "runner_report_%s.csv" % (report_postfix)
-    run_report_path = "run_report_%s.csv" % (report_postfix)
+    output_dir = args.output_dir
+    os.makedirs(output_dir, exist_ok=True)
+    runner_report_name = "%s_runner_report.csv" % (report_prefix)
+    run_report_name = "%s_run_report.csv" % (report_prefix)
+
+    runner_report_path = os.path.join(output_dir, runner_report_name)
     gen_runner_report(runner_report_path)
+    run_report_path = os.path.join(output_dir, run_report_name)
     gen_run_report(run_report_path)
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output-dir", help="Output directory for reports", action="store",
+                        default=DEFAULT_OUTPUT_DIR, dest="output_dir", type=str)
+    args = parser.parse_args()
     main()
