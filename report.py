@@ -7,6 +7,9 @@ from stravalib.client import Client
 from stravalib.model import Activity
 from db import ChallengeDB
 from model import Run, Runner
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+import os
 
 # Reuired environment
 MONGODB_URI = os.environ["MONGODB_URI"]
@@ -26,9 +29,25 @@ ChallengeDB.init(MONGODB_URI, DATABASE_NAME)
 
 runs = ChallengeDB.find_run()
 
+def upload_reports(token_path, folder_id, report_paths):
+    g_auth = GoogleAuth()
+    g_auth.LoadCredentialsFile(token_path)
+    drive = GoogleDrive(g_auth)
+
+    for report_path in report_paths:
+        with open(report_path,"r") as file:
+            title = os.path.basename(file.name)
+            file_drive = drive.CreateFile({
+                "title": title, 
+                "parents": [{"kind": "drive#fileLink", "id": folder_id}]
+            })
+            file_drive.SetContentString(file.read()) 
+            file_drive.Upload()
+            print("Upload file: %s" % (title))
+
 def gen_run_report(report_path):
     runs = ChallengeDB.find_run()
-    with open(report_path, 'w', newline='') as csvfile:
+    with open(report_path, "w", newline="") as csvfile:
         fieldnames = ["timestamp"] + list(runs[0].to_doc().keys())
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
@@ -45,7 +64,7 @@ def gen_run_report(report_path):
 
 def gen_runner_report(report_path):
     runners = ChallengeDB.find_runner()
-    with open(report_path, 'w', newline='') as csvfile:
+    with open(report_path, "w", newline="") as csvfile:
         fieldnames = ["timestamp","_id", "displayname", "intania", "createdAt"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
@@ -70,9 +89,17 @@ def main():
     run_report_path = os.path.join(output_dir, run_report_name)
     gen_run_report(run_report_path)
 
-if __name__ == '__main__':
+    if args.drive_token and args.drive_folder_id:
+        print("GDrive config is set, uploading reports to Gdrive.")
+        upload_reports(args.drive_token, args.drive_folder_id, [runner_report_path, run_report_path])
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", help="Output directory for reports", action="store",
                         default=DEFAULT_OUTPUT_DIR, dest="output_dir", type=str)
+    parser.add_argument("--drive-token", help="GDrive access token file", action="store",
+                        default=DEFAULT_OUTPUT_DIR, dest="drive_token", type=str)
+    parser.add_argument("--drive-folder-id", help="Destination folder id on GDrive", action="store",
+                        default=DEFAULT_OUTPUT_DIR, dest="drive_folder_id", type=str)
     args = parser.parse_args()
     main()
