@@ -29,8 +29,9 @@ ChallengeDB.init(MONGODB_URI, DATABASE_NAME)
 
 runs = ChallengeDB.find_run()
 
-def upload_reports(token_path, folder_id, report_paths):
+def upload_reports(drive_cleint_config, token_path, folder_id, report_paths):
     g_auth = GoogleAuth()
+    g_auth.LoadClientConfigFile(drive_cleint_config)
     g_auth.LoadCredentialsFile(token_path)
     drive = GoogleDrive(g_auth)
 
@@ -89,14 +90,16 @@ def main():
     run_report_path = os.path.join(output_dir, run_report_name)
     gen_run_report(run_report_path)
 
-    if args.drive_token and args.drive_folder_id:
+    if args.drive_cleint_config and args.drive_token and args.drive_folder_id:
         print("GDrive config is set, uploading reports to Gdrive.")
-        upload_reports(args.drive_token, args.drive_folder_id, [runner_report_path, run_report_path])
+        upload_reports(args.drive_cleint_config, args.drive_token, args.drive_folder_id, [runner_report_path, run_report_path])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", help="Output directory for reports", action="store",
                         default=DEFAULT_OUTPUT_DIR, dest="output_dir", type=str)
+    parser.add_argument("--drive-client-config", help="GDrive client config file", action="store",
+                        default=DEFAULT_OUTPUT_DIR, dest="drive_cleint_config", type=str)
     parser.add_argument("--drive-token", help="GDrive access token file", action="store",
                         default=DEFAULT_OUTPUT_DIR, dest="drive_token", type=str)
     parser.add_argument("--drive-folder-id", help="Destination folder id on GDrive", action="store",
