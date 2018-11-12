@@ -38,6 +38,21 @@ class ChallengeDB():
         return [Run.from_doc(run_doc) for run_doc in run_cursor]
 
     @classmethod
+    def find_summary_intania_distance(cls):
+        pipe = [ { 
+                "$group": { 
+                    "_id": "$intania", 
+                    "distance": { 
+                        "$sum": {  "$divide": [ "$distance", 1000.0] } 
+                    }
+                } 
+            },
+            { "$sort" : { "_id" : 1} }
+            ] 
+        cursor = ChallengeDB.DB.challenge_runs.aggregate(pipeline=pipe)
+        return [[summary["_id"], summary["distance"]] for summary in cursor]
+
+    @classmethod
     def insert_run(cls, run):
         assert type(run) == Run
         print("Insert Run: id=%s distance=%.2f intania=%s name=%s" % (run.id, run.distance, run.intania, run.name))
@@ -95,3 +110,17 @@ class ChallengeDB():
                 "$set": {"intania":runner.intania}
             }
             )
+
+    @classmethod
+    def find_summary_runner(cls):
+        field_filter = {"_id": 0 , "displayname": 1, "intania": 1}
+        sort_list = [("intania", 1),("displayname", 1)]
+        cursor = cls.DB.challenge_runners.find({}, field_filter).sort(sort_list)
+        summary_runners = []
+        for idx, runner in enumerate(cursor):
+            if runner["intania"] is not None:
+                summary_runners.append([idx + 1, runner["displayname"], runner["intania"] ])
+            else:
+                summary_runners.append([idx + 1, runner["displayname"], ""])
+
+        return summary_runners    
