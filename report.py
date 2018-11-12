@@ -41,7 +41,7 @@ class ChallengeSpread():
             cell.value = element
             
         # Update in batch
-        worksheet.update_cells(cell_list)
+        worksheet.update_cells(cell_list, "USER_ENTERED")
 
     def update_runner(self, spread_key, sheet_name, runner_data):
         print("Updating runner spreadsheet: %s" % (sheet_name))
@@ -56,7 +56,7 @@ class ChallengeSpread():
             cell.value = element
             
         # Update in batch
-        worksheet.update_cells(cell_list)
+        worksheet.update_cells(cell_list, "USER_ENTERED")
 
 # Reuired environment
 MONGODB_URI = os.environ["MONGODB_URI"]
