@@ -11,6 +11,52 @@ from model import Run, Runner
 from pydrive.auth import GoogleAuth
 from pydrive.drive import GoogleDrive
 import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
+
+DEFAULT_SCOPE = ["https://spreadsheets.google.com/feeds",
+         "https://www.googleapis.com/auth/drive"]
+
+class ChallengeSpread():
+
+    def __init__(self, credentials_path):
+        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, DEFAULT_SCOPE)
+        self.gc = gspread.authorize(self.credentials)
+
+    def __get_sheet(self, spread_key, sheet_name):
+        spread_sheet = self.gc.open_by_key(spread_key)
+        return spread_sheet.worksheet(sheet_name)
+
+    def update_summary_run(self, spread_key, sheet_name, run_data):
+        print("Updating run spreadsheet: %s" % (sheet_name))
+        # element in run_data : [intania, distance]
+        worksheet = self.__get_sheet(spread_key, sheet_name)
+
+        cell_list = worksheet.range("A2:B%d" % (len(run_data) + 1))
+        for idx, cell in enumerate(cell_list):
+            i = int(idx / 2)
+            j = idx % 2
+            element = run_data[i][j]
+            cell.value = element
+            
+        # Update in batch
+        worksheet.update_cells(cell_list)
+
+    def update_runner(self, spread_key, sheet_name, runner_data):
+        print("Updating runner spreadsheet: %s" % (sheet_name))
+        # element in runner_data : [no., displayname, intania]
+        worksheet = self.__get_sheet(spread_key, sheet_name)
+
+        cell_list = worksheet.range("A2:C%d" % (len(runner_data) + 1))
+        for idx, cell in enumerate(cell_list):
+            i = int(idx / 3)
+            j = idx % 3
+            element = runner_data[i][j]
+            cell.value = element
+            
+        # Update in batch
+        worksheet.update_cells(cell_list)
 
 # Reuired environment
 MONGODB_URI = os.environ["MONGODB_URI"]
@@ -22,8 +68,13 @@ STRING_TIME_FORMAT = "%Y-%b-%d %H:%M:%S"
 
 ChallengeDB.init(MONGODB_URI, DATABASE_NAME)
 
+def update_runner_spread(challenge_spread, spread_key, sheet_name):
+    runner_data = ChallengeDB.find_summary_runner()
+    challenge_spread.update_runner(spread_key, sheet_name, runner_data)
 
-runs = ChallengeDB.find_run()
+def update_run_spread(challenge_spread, spread_key, sheet_name, intania_range=range(50,99)):
+    run_data = ChallengeDB.find_summary_intania_distance(intania_range)
+    challenge_spread.update_summary_run(spread_key, sheet_name, run_data)
 
 def upload_reports(drive_cleint_config, token_path, folder_id, report_paths):
     g_auth = GoogleAuth()
@@ -100,6 +151,16 @@ def main():
         print("GDrive config is set, uploading reports to Gdrive.")
         upload_reports(args.drive_cleint_config, args.drive_token, args.drive_folder_id, [runner_report_path, run_report_path])
 
+    if args.credentials:
+        print("GSpread credentials is set, uploading summary to spreadsheet.")
+        challenge_spread = ChallengeSpread(args.credentials)
+
+        if args.run_spread_key and args.run_sheet_name
+            update_run_spread(challenge_spread, args.run_spread_key, args.run_sheet_name)
+
+        if args.runner_spread_key and args.runner_sheet_name
+            update_runner_spread(challenge_spread, args.runner_spread_key, args.runner_sheet_name)
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--output-dir", help="Output directory for reports", action="store",
@@ -112,5 +173,16 @@ if __name__ == "__main__":
                         dest="drive_token", type=str)
     parser.add_argument("--drive-folder-id", help="Destination folder id on GDrive", action="store",
                         dest="drive_folder_id", type=str)
+    # Spreadsheet config
+    parser.add_argument("--credentials", help="GSpread credentials", action="store",
+                        dest="credentials", type=str)
+    parser.add_argument("--run-spread-key", help="Spreadsheet key for run summary", action="store",
+                        dest="run_spread_key", type=str)
+    parser.add_argument("--run-sheet-name", help="Worksheet name for run summary", action="store",
+                        dest="run_sheet_name", type=str)
+    parser.add_argument("--runner-spread-key", help="Spreadsheet key for runner summary", action="store",
+                        dest="runner_spread_key", type=str)
+    parser.add_argument("--runner-sheet-name", help="Worksheet name for runner summary", action="store",
+                        dest="runner_sheet_name", type=str)
     args = parser.parse_args()
     main()

@@ -38,7 +38,7 @@ class ChallengeDB():
         return [Run.from_doc(run_doc) for run_doc in run_cursor]
 
     @classmethod
-    def find_summary_intania_distance(cls):
+    def find_summary_intania_distance(cls, intania_range=range(50, 100)):
         pipe = [ { 
                 "$group": { 
                     "_id": "$intania", 
@@ -50,7 +50,11 @@ class ChallengeDB():
             { "$sort" : { "_id" : 1} }
             ] 
         cursor = ChallengeDB.DB.challenge_runs.aggregate(pipeline=pipe)
-        return [[summary["_id"], summary["distance"]] for summary in cursor]
+        summary = {str(intania):0 for intania in intania_range}
+        for doc in cursor:
+            intania = doc["_id"]
+            summary[intania] = doc["distance"]
+        return [[intania, distance] for intania, distance in summary.items()]
 
     @classmethod
     def insert_run(cls, run):
