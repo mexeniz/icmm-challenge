@@ -155,10 +155,10 @@ def main():
         print("GSpread credentials is set, uploading summary to spreadsheet.")
         challenge_spread = ChallengeSpread(args.credentials)
 
-        if args.run_spread_key and args.run_sheet_name
+        if args.run_spread_key and args.run_sheet_name:
             update_run_spread(challenge_spread, args.run_spread_key, args.run_sheet_name)
 
-        if args.runner_spread_key and args.runner_sheet_name
+        if args.runner_spread_key and args.runner_sheet_name:
             update_runner_spread(challenge_spread, args.runner_spread_key, args.runner_sheet_name)
 
 if __name__ == "__main__":
