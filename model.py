@@ -65,8 +65,8 @@ class Run():
         start_date = act.start_date
         start_date_local = act.start_date_local
         distance = float(act.distance)
-        moving_time = int(act.moving_time.seconds)
-        elapsed_time = int(act.elapsed_time.seconds)
+        moving_time = int(act.moving_time.seconds + (act.moving_time.days * 86400))
+        elapsed_time = int(act.elapsed_time.seconds + (act.moving_time.days * 86400))
         elev_high = float(act.elev_high) if act.elev_high is not None else 0.0
         elev_low = float(act.elev_low) if act.elev_low is not None else 0.0
         total_elevation_gain = float(act.total_elevation_gain) if act.total_elevation_gain is not None else 0.0
