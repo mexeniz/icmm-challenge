@@ -1,16 +1,17 @@
 from pymongo import MongoClient
 from model import Run, Runner
 
+
 class ChallengeDB():
     MONGO_CLIENT = None
     DB = None
-    
+
     @classmethod
     def init(cls, mongodb_uri, database_name):
         cls.MONGO_CLIENT = MongoClient(mongodb_uri)
-        cls.DB = eval ("cls.MONGO_CLIENT.%s" % (database_name))
+        cls.DB = eval("cls.MONGO_CLIENT.%s" % (database_name))
         print("Initialized database connection")
-    
+
     ###########
     # RUN
     ###########
@@ -31,7 +32,7 @@ class ChallengeDB():
     def find_run_by_id(cls, id):
         run_cursor = cls.DB.challenge_runs.find({"id": id})
         return [Run.from_doc(run_doc) for run_doc in run_cursor]
-    
+
     @classmethod
     def find_run_by_intania(cls, intania):
         run_cursor = cls.DB.challenge_runs.find({"intania": intania})
@@ -39,18 +40,18 @@ class ChallengeDB():
 
     @classmethod
     def find_summary_intania_distance(cls, intania_range=range(50, 100)):
-        pipe = [ { 
-                "$group": { 
-                    "_id": "$intania", 
-                    "distance": { 
-                        "$sum": {  "$divide": [ "$distance", 1000.0] } 
+        pipe = [{
+                "$group": {
+                    "_id": "$intania",
+                    "distance": {
+                        "$sum": {"$divide": ["$distance", 1000.0]}
                     }
-                } 
-            },
-            { "$sort" : { "_id" : 1} }
-            ] 
+                }
+                },
+                {"$sort": {"_id": 1}}
+                ]
         cursor = ChallengeDB.DB.challenge_runs.aggregate(pipeline=pipe)
-        summary = {str(intania):0 for intania in intania_range}
+        summary = {str(intania): 0 for intania in intania_range}
         for doc in cursor:
             intania = doc["_id"]
             summary[intania] = doc["distance"]
@@ -59,10 +60,15 @@ class ChallengeDB():
     @classmethod
     def insert_run(cls, run):
         assert type(run) == Run
-        print("Insert Run: id=%s distance=%.2f intania=%s name=%s" % (run.id, run.distance, run.intania, run.name))
+        print("Insert Run: id=%s distance=%.2f intania=%s name=%s" %
+              (run.id, run.distance, run.intania, run.name))
         # Get result _id by inserted_id attribute
         return cls.DB.challenge_runs.insert_one(run.to_doc())
-    
+
+    @classmethod
+    def update_one_run(cls, query, run, upsert=False):
+        return cls.DB.challenge_runs.update_one(query, {"$set": run.to_doc()}, upsert=upsert)
+
     ###########
     # RUNNER
     ###########
@@ -84,7 +90,8 @@ class ChallengeDB():
     @classmethod
     def insert_runner(cls, runner):
         assert type(runner) == Runner
-        print("Insert Runner: id=%s displayname=%s intania=%s" % (runner.id, runner.displayname, runner.intania))
+        print("Insert Runner: id=%s displayname=%s intania=%s" %
+              (runner.id, runner.displayname, runner.intania))
         return cls.DB.challenge_runners.insert_one(runner.to_doc())
 
     @classmethod
@@ -92,39 +99,43 @@ class ChallengeDB():
         assert type(runner) == Runner
         runner_doc = runner.to_doc()
         if updated_keys:
-            runner_doc = {key:runner_doc[key] for key in keys}
+            runner_doc = {key: runner_doc[key] for key in keys}
         else:
             # Update all keys except "_id"
             runner_doc.pop("_id", None)
-        print("Update Runner: id=%s displayname=%s intania=%s" % (runner.id, runner.displayname, runner.intania))
+        print("Update Runner: id=%s displayname=%s intania=%s" %
+              (runner.id, runner.displayname, runner.intania))
         return cls.DB.challenge_runners.update_one(
-            {"_id":runner.id},
+            {"_id": runner.id},
             {
                 "$set": runner_doc
-            } 
-            )
+            }
+        )
 
     @classmethod
     def update_one_runner_intania(cls, runner):
         assert type(runner) == Runner
-        print("Update Runner's Intania: id=%s displayname=%s intania=%s" % (runner.id, runner.displayname, runner.intania))
+        print("Update Runner's Intania: id=%s displayname=%s intania=%s" %
+              (runner.id, runner.displayname, runner.intania))
         return cls.DB.challenge_runners.update_one(
-            {"_id":runner.id}, 
+            {"_id": runner.id},
             {
-                "$set": {"intania":runner.intania}
+                "$set": {"intania": runner.intania}
             }
-            )
+        )
 
     @classmethod
     def find_summary_runner(cls):
-        field_filter = {"_id": 0 , "displayname": 1, "intania": 1}
-        sort_list = [("intania", 1),("displayname", 1)]
-        cursor = cls.DB.challenge_runners.find({}, field_filter).sort(sort_list)
+        field_filter = {"_id": 0, "displayname": 1, "intania": 1}
+        sort_list = [("intania", 1), ("displayname", 1)]
+        cursor = cls.DB.challenge_runners.find(
+            {}, field_filter).sort(sort_list)
         summary_runners = []
         for idx, runner in enumerate(cursor):
             if runner["intania"] is not None:
-                summary_runners.append([idx + 1, runner["displayname"], runner["intania"] ])
+                summary_runners.append(
+                    [idx + 1, runner["displayname"], runner["intania"]])
             else:
                 summary_runners.append([idx + 1, runner["displayname"], ""])
 
-        return summary_runners    
+        return summary_runners
