@@ -6,6 +6,23 @@ from model import Run, Runner
 # SQL Database Connector
 # ICMM Intania Challenge & F5 Challenge 2020
 
+class SqlQueryGenerator():
+
+    @classmethod
+    def intania_runner_summary():
+        pass
+    
+    @classmethod
+    def intania_run_summary():
+        pass
+
+    @classmethod
+    def foundation_runner_summary():
+        pass
+    
+    @classmethod
+    def foundation_run_summary():
+        pass
 
 class ChallengeSqlDB():
     DB = None
@@ -19,6 +36,30 @@ class ChallengeSqlDB():
         )
         print("Initialized database connection")
 
+    @classmethod
+    def query(query_str):
+        pass
+
+    ###########
+    # Club
+    ###########
+    # get_all_clubs
+
+    ###########
+    # USER
+    ###########
+
+    # get_all_users
+    # get_all_intania_users
+    # get_all_foundation_users
+    # update_user_intania
+
+    ###########
+    # RUN
+    ###########
+    # get_run_by_strava_id
+    # insert_run(replace=False)
+    
 
 # MongoDB Connector
 class ChallengeDB():

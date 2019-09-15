@@ -128,3 +128,32 @@ class User():
         intania = user_row[7]
         foundation = user_row[8]
         return cls(id, reg_info_id, strava_id, first_name, last_name, strava_code, strava_token, created_at, intania, foundation)
+
+class Club():
+    def __init__(self, id, strava_id,  name, intaniaม created_at):
+        self.id = id
+        self.strava_id = strava_id
+        self.name = name
+        self.intania = intania
+
+        if not created_at:
+            self.created_at = datetime.datetime.now()
+        else:
+            self.created_at = created_at
+
+    def to_row(self):
+        row = (
+            self.id,
+            self.strava_id,
+            self.name,
+            self.intania
+        )
+        return row
+
+    @classmethod
+    def from_row(cls, club_row):
+        id = club_row[0]
+        strava_id = club_row[1]
+        name = club_row[2]
+        intania = club_row[3]
+        return cls(id, strava_id, name, intania)
