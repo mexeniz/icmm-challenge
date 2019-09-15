@@ -1,7 +1,26 @@
+import mysql.connector
 from pymongo import MongoClient
+
 from model import Run, Runner
 
+# SQL Database Connector
+# ICMM Intania Challenge & F5 Challenge 2020
 
+
+class ChallengeSqlDB():
+    DB = None
+
+    @classmethod
+    def init(cls, mysql_host, mysql_username, mysql_password):
+        cls.DB = mysql.connector.connect(
+            host=mysql_host,
+            user=mysql_username,
+            passwd=mysql_password
+        )
+        print("Initialized database connection")
+
+
+# MongoDB Connector
 class ChallengeDB():
     MONGO_CLIENT = None
     DB = None
