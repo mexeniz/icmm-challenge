@@ -30,7 +30,6 @@ class Run():
             self.name,
             self.start_date,
             self.start_date_local,
-            self.intania,
             self.distance,
             self.moving_time,
             self.elapsed_time,
@@ -57,7 +56,7 @@ class Run():
         elev_low = run_row[12]
         total_elevation_gain = run_row[13]
         created_at = run_row[14]
-        return cls(id, strava_id, user_id, name, start_date, start_date_local, athlete_id, intania, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, created_at)
+        return cls(id, strava_id, user_id, name, start_date, start_date_local, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, created_at)
 
     @classmethod
     def from_activity(cls, act, user_id):
@@ -82,7 +81,7 @@ class Run():
 
 
 class User():
-    def __init__(self, id, reg_info_id, strava_id,  first_name, last_name, strava_code, strava_token, created_at=None):
+    def __init__(self, id, reg_info_id, strava_id,  first_name, last_name, strava_code, strava_token, created_at=None, intania=None, foundation=None):
         self.id = id
         self.reg_info_id = reg_info_id
         self.strava_id = strava_id
@@ -96,6 +95,10 @@ class User():
         else:
             self.created_at = created_at
 
+        # From joining table
+        self.intania = foundation
+        self.foundation = foundation
+
     def to_row(self):
         row = (
             self.id,
@@ -105,7 +108,9 @@ class User():
             self.last_name,
             self.strava_code,
             self.strava_token,
-            self.created_at
+            self.created_at,
+            self.intania,
+            self.foundation
         )
         return row
 
@@ -119,4 +124,7 @@ class User():
         strava_code = user_row[4]
         strava_token = user_row[5]
         created_at = user_row[6]
-        return cls(id, reg_info_id, strava_id, first_name, last_name, strava_code, strava_token, created_at)
+
+        intania = user_row[7]
+        foundation = user_row[8]
+        return cls(id, reg_info_id, strava_id, first_name, last_name, strava_code, strava_token, created_at, intania, foundation)
