@@ -33,12 +33,14 @@ class User(Base):
     first_name = Column(String)
     last_name = Column(String)
     strava_id = Column(String)
-    credentials = relationship('Credential')
+    credentials = relationship('Credential',
+                        lazy='joined')
     registration_id = Column(BigInteger, ForeignKey("registrations.id"))
 #     registation = relationship('Registration')
     clubs = relationship(IntaniaClub,
                         secondary='user_clubs',
-                        uselist=True)
+                        uselist=True,
+                        lazy='joined')
 
 class UserClub(Base):
     __tablename__ = 'user_clubs'

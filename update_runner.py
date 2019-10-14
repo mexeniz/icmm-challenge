@@ -10,6 +10,7 @@ from stravalib.model import Activity
 from db import ChallengeSqlDB
 from model2 import User
 
+import time
 
 CLIENT_ID = os.environ["STRAVA_CLIENT_ID"]
 CLIENT_SECRET = os.environ["STRAVA_CLIENT_SECRET"]
@@ -40,6 +41,7 @@ def main():
             (user.strava_id, user.first_name, user.last_name))
         access_token = user.credentials[0].strava_token
         client = Client(access_token=access_token)
+        # stravalib.exc.RateLimitExceeded
         athlete = client.get_athlete()
         joined_clubs = athlete.clubs
 
@@ -64,6 +66,8 @@ def main():
                 (user.id, athlete.firstname, athlete.lastname))
             print(e)
 
+        time.sleep(0.2)
+        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
