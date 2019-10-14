@@ -1,96 +1,71 @@
 #!/usr/bin/env python
+import argparse
+import csv
+import datetime
+import os
+
 from stravalib.client import Client
 from stravalib.model import Activity
-import csv
-import argparse
-import datetime
-from pymongo import MongoClient
-import datetime
-from db import ChallengeDB
-from model import Runner
-import os
+
+from db import ChallengeSqlDB
+from model2 import User
+
 
 CLIENT_ID = os.environ["STRAVA_CLIENT_ID"]
 CLIENT_SECRET = os.environ["STRAVA_CLIENT_SECRET"]
 
-MONGODB_URI = os.environ["MONGODB_URI"]
-DATABASE_NAME = os.environ["DATABASE_NAME"]
-
-DEFAULT_USER_CSV_PATH = "data/auth_data.csv"
-DEFAULT_CLUB_CSV_PATH = "data/intania_clubs.csv"
+MYSQL_HOST = os.environ["MYSQL_HOST"]
+MYSQL_USERNAME = os.environ["MYSQL_USERNAME"]
+MYSQL_PASSWORD = os.environ["MYSQL_PASSWORD"]
+MYSQL_DB_NAME = os.environ["MYSQL_DB_NAME"]
 
 def main():
+    ChallengeSqlDB.init(MYSQL_HOST, MYSQL_USERNAME,
+                        MYSQL_PASSWORD, MYSQL_DB_NAME)
 
-    # Load user auth from csv
-    code_dict = {}
-    with open(args.auth_data, newline='') as csv_file:
-        reader = csv.DictReader(csv_file)
-        for row in reader:
-            code_dict[row["user_id"]] = (row["code"], row["user_displayname"], row["token"])
-            
-    users = []
-    for user_id, tup in code_dict.items():
-        code = tup[0]
-        user_displayname = tup[1]
-        token = tup[2]
-        user = Runner(user_id, user_displayname, None, code, token)
-        print("ID:", user_id, "Name:", user_displayname)
-        users.append(user)
+    print("Get all runners from db")
+    users = ChallengeSqlDB.get_all_users()
 
     # Load club id from csv
-    club_dict = {} # Map id -> intania
-    with open(args.club_data, newline='') as csv_file:
-        reader = csv.DictReader(csv_file)
-        for row in reader:
-            print("Intania:", row["intania"], "ID:", row["club_id"])
-            club_dict[row["club_id"]] = row["intania"]
-
-    # Get all users from MongoDb
-    ChallengeDB.init(MONGODB_URI, DATABASE_NAME)
-    mongo_users = ChallengeDB.find_runner()
-    mongo_users_dict = {}
-    for user in mongo_users:
-        mongo_users_dict[user.id] = user
+    intania_clubs = ChallengeSqlDB.get_all_intania_clubs()
+    # Map strava_id -> club.id
+    intania_clubs_dict = {}
+    for intania_club in intania_clubs:
+        intania_clubs_dict[intania_club.strava_id] = intania_club
 
     # Find intania for
     for user in users:
-        
         # User already has basic data in the database
-        if user.id in mongo_users_dict and mongo_users_dict[user.id].intania and mongo_users_dict[user.id].intania != "":
-            print(user.displayname, "already completed, skip...")
-            continue
-
-        client = Client(access_token=user.access_token)
+        print("User: strava_id=%s displayname='%s %s'" % 
+            (user.strava_id, user.first_name, user.last_name))
+        access_token = user.credentials[0].strava_token
+        client = Client(access_token=access_token)
         athlete = client.get_athlete()
         joined_clubs = athlete.clubs
-        for club in joined_clubs:
-    #         print("id:", club.id, "Club name:", club.name)
-            club_id = str(club.id)
-            if club_id in club_dict:
-                user.intania = club_dict[club_id]
-                break
 
-
-        if user.id in mongo_users_dict:
-            # User is in DB
-            if user.intania:
-                # Found intania for user
-                print(user.displayname, "Intania %s" % (user.intania))
-                ChallengeDB.update_one_runner_intania(user)
-            else:
-                print(user.displayname, "not found intania, skip...")
+        if not (user.clubs is None or not user.clubs):
+            print("%s %s is in '%s' club, skip club update..." % 
+                (user.first_name, user.last_name, user.clubs[0].name))
         else:
-            # New authenticated user
-            # Save to MongoDb
-            ChallengeDB.insert_runner(user)
+            for club in joined_clubs:
+        #         print("id:", club.id, "Club name:", club.name)
+                club_strava_id = str(club.id)
+                if club_strava_id in intania_clubs_dict :
+                    # update in database
+                    intania_club = intania_clubs_dict[club_strava_id]
+                    print('Update intania club (%s) for %s %s' % (intania_club.name, user.first_name, user.last_name))
+                    ChallengeSqlDB.update_user_intania(user.id, intania_club.id)
 
+        # Update first & last name
+        try:
+            ChallengeSqlDB.update_user_name(user.id, athlete.firstname, athlete.lastname)
+        except Exception as e:
+            print('Failed to update user entity: id=%d displayname=%s %s' % 
+                (user.id, athlete.firstname, athlete.lastname))
+            print(e)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--auth-data", help="Auth data csv", action="store",
-                        default=DEFAULT_USER_CSV_PATH, dest="auth_data", type=str)
-    parser.add_argument("--club-data", help="Intania club data csv", action="store",
-                        default=DEFAULT_CLUB_CSV_PATH, dest="club_data", type=str)
     args = parser.parse_args()
     main()
 

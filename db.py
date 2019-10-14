@@ -155,6 +155,16 @@ class ChallengeSqlDB():
         user_club = UserClub(user_id=user_id, club_id=club_id)
         sess.add(user_club)
         sess.commit()
+    
+    @classmethod
+    def update_user_name(cls, user_id, first_name, last_name):
+        sess = cls.SESSION()
+        sess.query(User).filter(User.id == user_id).update(
+            {
+                'first_name': first_name,
+                'last_name': last_name
+            })
+        sess.commit()
 
     ###########
     # RUN
