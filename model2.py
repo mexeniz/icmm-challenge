@@ -3,9 +3,9 @@ import datetime
 
 class Run():
 
-    def __init__(self, id, strava_id, user_id, name,  start_date, start_date_local, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, created_at=None):
+    def __init__(self, id, strava_id, user_id, name,  start_date, start_date_local, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, manual, created_at=None):
         self.id = id  # Incremental ID
-        self.strava_id = id
+        self.strava_id = strava_id
         self.user_id = user_id
         self.name = name
         self.start_date = start_date
@@ -16,6 +16,7 @@ class Run():
         self.elev_high = elev_high
         self.elev_low = elev_low
         self.total_elevation_gain = total_elevation_gain
+        self.manual = manual
 
         if not created_at:
             self.created_at = datetime.datetime.now()
@@ -77,7 +78,8 @@ class Run():
         elev_low = float(act.elev_low) if act.elev_low is not None else 0.0
         total_elevation_gain = float(
             act.total_elevation_gain) if act.total_elevation_gain is not None else 0.0
-        return cls(id, strava_id, user_id, name, athlete_id, start_date, start_date_local, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain)
+        manual = bool(act.manual)
+        return cls(id, strava_id, user_id, name, start_date, start_date_local, distance, moving_time, elapsed_time, elev_high, elev_low, total_elevation_gain, manual)
 
 
 class User():
@@ -130,7 +132,7 @@ class User():
         return cls(id, reg_info_id, strava_id, first_name, last_name, strava_code, strava_token, created_at, intania, foundation)
 
 class Club():
-    def __init__(self, id, strava_id,  name, intaniaม created_at):
+    def __init__(self, id, strava_id,  name, intania, created_at):
         self.id = id
         self.strava_id = strava_id
         self.name = name
