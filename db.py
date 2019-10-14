@@ -109,15 +109,15 @@ class ChallengeSqlDB():
     SESSION = None
 
     @classmethod
-    def init(cls, mysql_host, mysql_username, mysql_password):
-        db_name = 'strava'
-        cls.DB_ENGINE = create_engine('mysql://root:mflv[%401234@127.0.0.1/{}'.format(db_name))
+    def init(cls, mysql_host, mysql_username, mysql_password, mysql_db_name):
+        connection_str = 'mysql://{}:{}@{}/{}?charset=utf8mb4'.format(mysql_username, mysql_password, mysql_host, mysql_db_name)
+        cls.DB_ENGINE = create_engine(connection_str)
         
         cls.SESSION = sessionmaker()
         cls.SESSION.configure(bind=cls.DB_ENGINE)
         Base.metadata.create_all(cls.DB_ENGINE)
         connection = cls.DB_ENGINE.connect()
-        print("Initialized database connection")
+        print("Initialized database connection: host={}".format(mysql_host))
 
     ###########
     # Club
