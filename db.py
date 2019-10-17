@@ -55,7 +55,8 @@ class Credential(Base):
     deleted_at = Column(DateTime)
     user_id = Column(BigInteger, ForeignKey("users.id"))
     strava_client = Column(String, primary_key=True)
-    strava_token = Column(String, primary_key=True)
+    strava_token = Column(String)
+    strava_refresh = Column(String, primary_key=True)
     strava_code = Column(String)
     
 class Registration(Base):
@@ -113,7 +114,7 @@ class ChallengeSqlDB():
     @classmethod
     def init(cls, mysql_host, mysql_username, mysql_password, mysql_db_name):
         connection_str = 'mysql://{}:{}@{}/{}?charset=utf8mb4'.format(mysql_username, mysql_password, mysql_host, mysql_db_name)
-        cls.DB_ENGINE = create_engine(connection_str)
+        cls.DB_ENGINE = create_engine(connection_str, pool_size=30, max_overflow=0)
         
         cls.SESSION = sessionmaker()
         cls.SESSION.configure(bind=cls.DB_ENGINE)

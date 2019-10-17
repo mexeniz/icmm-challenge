@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-import os
 import datetime
+import os
+import time
+
 from stravalib.client import Client
 from stravalib.model import Activity
+
 from db import ChallengeSqlDB
 from model2 import Run, User
 
@@ -33,9 +36,33 @@ def main():
             print("Skip runner with None intania: id=%s displayname='%s %s'" %
                   (user.strava_id, user.first_name, user.last_name))
             continue
-        access_token = user.credentials[0].strava_token
+        if not user.credentials:
+            print("Skip runner with empty credentials: id=%s displayname='%s %s'" %
+                  (user.strava_id, user.first_name, user.last_name))
+            continue
+
+        refresh_token = None
+        for cred in user.credentials:
+            if cred.strava_client == CLIENT_ID:
+                refresh_token = cred.strava_refresh
+        if refresh_token is None:
+            print("Skip runner with empty credentials for client_id=%s : id=%s displayname='%s %s'" %
+                  (CLIENT_ID, user.strava_id, user.first_name, user.last_name))
+            continue
+    
+        print('Found refresh_token for the user ...')
+
+        client = Client()
+        # Get new access token
+        refresh_response = client.refresh_access_token(
+            client_id=CLIENT_ID, 
+            client_secret=CLIENT_SECRET, 
+            refresh_token=refresh_token)
+        # Set up user's access token and ready to fetch Strava data
+        client.access_token = refresh_response['access_token']
+        
         intania = user.clubs[0].intania
-        client = Client(access_token=access_token)
+        time.sleep(0.2)
         activities = client.get_activities(
             after=CHALLENGE_START_DATE, before=CHALLENGE_END_DATE)
         print("Get activities: idx=%d/%d id=%s displayname='%s %s' intania:'%d'" %

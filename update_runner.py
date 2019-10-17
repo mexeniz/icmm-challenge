@@ -39,10 +39,39 @@ def main():
         # User already has basic data in the database
         print("User: strava_id=%s displayname='%s %s'" % 
             (user.strava_id, user.first_name, user.last_name))
-        access_token = user.credentials[0].strava_token
-        client = Client(access_token=access_token)
+        
+        if not user.credentials:
+            print("Skip runner with empty credentials: id=%s displayname='%s %s'" %
+                  (user.strava_id, user.first_name, user.last_name))
+            continue
+        
+        refresh_token = None
+        for cred in user.credentials:
+            if cred.strava_client == CLIENT_ID:
+                refresh_token = cred.strava_refresh
+        if refresh_token is None:
+            print("Skip runner with empty credentials for client_id=%s : id=%s displayname='%s %s'" %
+                  (CLIENT_ID, user.strava_id, user.first_name, user.last_name))
+            continue
+        
+        print('Found refresh_token for the user ...')
+
+        client = Client()
+        # Get new access token
+        refresh_response = client.refresh_access_token(
+            client_id=CLIENT_ID, 
+            client_secret=CLIENT_SECRET, 
+            refresh_token=refresh_token)
+        # Set up user's access token and ready to fetch Strava data
+        client.access_token = refresh_response['access_token']
+
         # stravalib.exc.RateLimitExceeded
-        athlete = client.get_athlete()
+        try:
+            athlete = client.get_athlete()
+        except Exception as e:
+            print('Error: failed to fetch Strava profile')
+            print(e)
+            continue
         joined_clubs = athlete.clubs
 
         if not (user.clubs is None or not user.clubs):
@@ -62,12 +91,12 @@ def main():
         try:
             ChallengeSqlDB.update_user_name(user.id, athlete.firstname, athlete.lastname)
         except Exception as e:
-            print('Failed to update user entity: id=%d displayname=%s %s' % 
+            print('Error: failed to update user entity: id=%d displayname=%s %s' % 
                 (user.id, athlete.firstname, athlete.lastname))
             print(e)
 
         time.sleep(0.2)
-        
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     args = parser.parse_args()
