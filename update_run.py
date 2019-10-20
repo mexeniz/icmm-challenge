@@ -77,11 +77,16 @@ def main():
         else:
             intania = 0
 
+        if user.registration and user.registration.foundation:
+            ranger_team = user.registration.foundation.name
+        else:
+            ranger_team = None
+
         time.sleep(0.2)
         activities = client.get_activities(
             after=CHALLENGE_START_DATE, before=CHALLENGE_END_DATE)
-        print("Get activities: idx=%d/%d id=%s displayname='%s %s' intania:'%d'" %
-              (idx + 1, n_user, user.strava_id, user.first_name, user.last_name, intania))
+        print("Get activities: idx=%d/%d id=%s displayname='%s %s' intania='%s' ranger='%s'" %
+              (idx + 1, n_user, user.strava_id, user.first_name, user.last_name, intania, ranger_team))
         n_run = 0
         for act in activities:
             if act.type != Activity.RUN:
