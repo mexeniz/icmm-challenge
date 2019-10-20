@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 import argparse
-import csv
-import datetime
 import os
 
 from stravalib.client import Client
@@ -27,7 +25,6 @@ def main():
     print("Get all runners from db")
     users = ChallengeSqlDB.get_all_users()
 
-    # Load club id from csv
     intania_clubs = ChallengeSqlDB.get_all_intania_clubs()
     # Map strava_id -> club.id
     intania_clubs_dict = {}

@@ -36,7 +36,7 @@ class User(Base):
     credentials = relationship('Credential',
                         lazy='joined')
     registration_id = Column(BigInteger, ForeignKey("registrations.id"))
-#     registation = relationship('Registration')
+    registration = relationship('Registration')
     clubs = relationship(IntaniaClub,
                         secondary='user_clubs',
                         uselist=True,
@@ -147,7 +147,7 @@ class ChallengeSqlDB():
         return rows
 
     @classmethod
-    def get_all_foundation_users(cls):
+    def get_all_ranger_users(cls):
         sess = cls.SESSION()
         rows = sess.query(User).filter(User.registration).all()
         return rows
