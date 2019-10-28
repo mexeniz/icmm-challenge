@@ -3,7 +3,7 @@ from sqlalchemy import Column, DateTime, Date, String, Integer, BigInteger, Floa
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy import create_engine, MetaData, Table, func
+from sqlalchemy import create_engine, MetaData, Table, func, distinct
 from sqlalchemy.orm import sessionmaker
 
 import mysql.connector
@@ -215,12 +215,32 @@ class ChallengeSqlDB():
     # Summary
     ###########
     @classmethod
-    def get_summary_user(cls):
-        pass
+    def get_summary_intania_distance(cls):
+        sess = cls.SESSION()
+        rows = sess.query(
+            IntaniaClub.intania, 
+            func.sum(Activity.distance).label('total_distance'), 
+            func.count(distinct(Activity.user_id)).label('total_user'),
+            func.count(Activity.strava_id).label('total_run')
+        ).group_by(
+            IntaniaClub
+        ).join(
+            UserClub, User, Activity
+        ).order_by(
+            IntaniaClub.intania.desc()
+        ).all()
+        return rows
 
     @classmethod
-    def get_summary_intania_distance(cls, intania_range):
-        pass
+    def get_summary_ranger_distance(cls):
+        sess = cls.SESSION()
+        rows = sess.query(
+            Foundation.name, 
+            func.sum(Activity.distance).label('total_distance'), 
+            func.count(distinct(Activity.user_id)).label('total_user'),
+            func.count(Activity.strava_id).label('total_run')
+        ).group_by(Foundation).outerjoin(Registration, Foundation.id == Registration.foundation_id).join(User, Activity).all()
+        return rows
 
 # MongoDB Connector
 class ChallengeDB():
