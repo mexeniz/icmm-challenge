@@ -98,7 +98,7 @@ class User():
             self.created_at = created_at
 
         # From joining table
-        self.intania = foundation
+        self.intania = intania
         self.foundation = foundation
 
     def to_row(self):

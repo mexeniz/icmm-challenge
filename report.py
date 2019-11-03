@@ -1,27 +1,29 @@
 #!/usr/bin/env python
-import os
-import csv
-import pytz
-import datetime
 import argparse
-from stravalib.client import Client
-from stravalib.model import Activity
-from db import ChallengeDB
-from model import Run, Runner
-from pydrive.auth import GoogleAuth
-from pydrive.drive import GoogleDrive
+import csv
+import datetime
 import os
+import pytz
+
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from stravalib.client import Client
+from stravalib.model import Activity
 
+from db import ChallengeSqlDB
+from model2 import Run, User
 
 DEFAULT_SCOPE = ["https://spreadsheets.google.com/feeds",
-         "https://www.googleapis.com/auth/drive"]
+                 "https://www.googleapis.com/auth/drive"]
+
 
 class ChallengeSpread():
 
     def __init__(self, credentials_path):
-        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, DEFAULT_SCOPE)
+        self.credentials = ServiceAccountCredentials.from_json_keyfile_name(
+            credentials_path, DEFAULT_SCOPE)
         self.gc = gspread.authorize(self.credentials)
 
     def __get_sheet(self, spread_key, sheet_name):
@@ -33,13 +35,19 @@ class ChallengeSpread():
         # element in run_data : [intania, distance]
         worksheet = self.__get_sheet(spread_key, sheet_name)
 
-        cell_list = worksheet.range("A2:B%d" % (len(run_data) + 1))
+        cell_list = worksheet.range("A2:E%d" % (len(run_data)))
         for idx, cell in enumerate(cell_list):
-            i = int(idx / 2)
-            j = idx % 2
-            element = run_data[i][j]
+            i = int(idx / 5)
+            j = idx % 5
+            if j == 0:
+                # Insert row number
+                element = i + 1
+            else:
+                print(i, j-1)
+                print(run_data[i])
+                element = run_data[i][j - 1]
             cell.value = element
-            
+
         # Update in batch
         worksheet.update_cells(cell_list, "USER_ENTERED")
 
@@ -48,33 +56,70 @@ class ChallengeSpread():
         # element in runner_data : [no., displayname, intania]
         worksheet = self.__get_sheet(spread_key, sheet_name)
 
-        cell_list = worksheet.range("A2:C%d" % (len(runner_data) + 1))
+        cell_list = worksheet.range("A2:D%d" % (len(runner_data)))
         for idx, cell in enumerate(cell_list):
-            i = int(idx / 3)
-            j = idx % 3
-            element = runner_data[i][j]
+            i = int(idx / 4)
+            j = idx % 4
+            if j == 0:
+                # Insert row number
+                element = i + 1
+            else:
+                element = runner_data[i][j - 1]
             cell.value = element
-            
+
         # Update in batch
         worksheet.update_cells(cell_list, "USER_ENTERED")
 
+
 # Reuired environment
-MONGODB_URI = os.environ["MONGODB_URI"]
-DATABASE_NAME = os.environ["DATABASE_NAME"]
+TIME_STRING_FORMAT = "%Y-%m-%d %H:%M:%S"
 
 DEFAULT_OUTPUT_DIR = "./"
 
-STRING_TIME_FORMAT = "%Y-%b-%d %H:%M:%S"
+MYSQL_HOST = os.environ["MYSQL_HOST"]
+MYSQL_USERNAME = os.environ["MYSQL_USERNAME"]
+MYSQL_PASSWORD = os.environ["MYSQL_PASSWORD"]
+MYSQL_DB_NAME = os.environ["MYSQL_DB_NAME"]
 
-ChallengeDB.init(MONGODB_URI, DATABASE_NAME)
+ChallengeSqlDB.init(MYSQL_HOST, MYSQL_USERNAME,
+                    MYSQL_PASSWORD, MYSQL_DB_NAME)
 
-def update_runner_spread(challenge_spread, spread_key, sheet_name):
-    runner_data = ChallengeDB.find_summary_runner()
+
+def update_runner_spread_intania(challenge_spread, spread_key, sheet_name):
+    users = ChallengeSqlDB.get_all_intania_users()
+    runner_data = []
+    for user in users:
+        if user.clubs:
+            intania = user.clubs[0].intania
+        else:
+            intania = "N/A"
+        runner_data.append((user.first_name, user.last_name, intania))
+
     challenge_spread.update_runner(spread_key, sheet_name, runner_data)
 
-def update_run_spread(challenge_spread, spread_key, sheet_name, intania_range=range(50,99)):
-    run_data = ChallengeDB.find_summary_intania_distance(intania_range)
+
+def update_run_spread_intania(challenge_spread, spread_key, sheet_name):
+    rows = ChallengeSqlDB.get_summary_intania_distance()
+    run_data = []
+    for row in rows:
+        # row.total_distance type is Decimal
+        run_data.append(
+            (row.intania, int(row.total_distance) / 1000.0, row.total_user, row.total_run)
+        )
+    
     challenge_spread.update_summary_run(spread_key, sheet_name, run_data)
+
+
+def update_run_spread_ranger(challenge_spread, spread_key, sheet_name):
+    rows = ChallengeSqlDB.get_summary_ranger_distance()
+    run_data = []
+    for row in rows:
+        # row.total_distance type is Decimal
+        run_data.append(
+            (row.name, int(row.total_distance)/ 1000.0, row.total_user, row.total_run)
+        )
+    challenge_spread.update_summary_run(spread_key, sheet_name, run_data)
+
 
 def upload_reports(drive_cleint_config, token_path, folder_id, report_paths):
     g_auth = GoogleAuth()
@@ -83,48 +128,108 @@ def upload_reports(drive_cleint_config, token_path, folder_id, report_paths):
     drive = GoogleDrive(g_auth)
 
     for report_path in report_paths:
-        with open(report_path,"r") as file:
+        with open(report_path, "r") as file:
             title = os.path.basename(file.name)
             file_drive = drive.CreateFile({
-                "title": title, 
+                "title": title,
                 "parents": [{"kind": "drive#fileLink", "id": folder_id}]
             })
-            file_drive.SetContentString(file.read()) 
+            file_drive.SetContentString(file.read())
             file_drive.Upload()
             print("Upload file: %s" % (title))
 
+
 def gen_run_report(timestamp, report_path):
-    runs = ChallengeDB.find_run()
+    runs = ChallengeSqlDB.get_all_runs()
     with open(report_path, "w", newline="") as csvfile:
-        fieldnames = ["timestamp"] + list(runs[0].to_doc().keys())
+        fieldnames = ["timestamp",
+                      "start_date",
+                      "start_date_local",
+                      "strava_id",
+                      "name",
+                      "distance",
+                      "moving_time",
+                      "elapsed_time",
+                      "elev_high",
+                      "elev_low",
+                      "total_elevation_gain",
+                      "manual",
+                      "promo_comment",
+                      "promo_multiplier",
+                      "user_strava_id",
+                      "user_intania",
+                      "user_ranger",
+                      "created_at"
+                      ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
+        n_run = 0
         for run in runs:
-            row = run.to_doc()
+            row = vars(run)
             row["timestamp"] = timestamp
-            row["startDate"] = row["startDate"].strftime(STRING_TIME_FORMAT)
-            row["startDateLocal"] = row["startDateLocal"].strftime(STRING_TIME_FORMAT)
-            row["createdAt"] = row["createdAt"].strftime(STRING_TIME_FORMAT)
+            row["start_date"] = row["start_date"].strftime(TIME_STRING_FORMAT)
+            row["start_date_local"] = row["start_date_local"].strftime(
+                TIME_STRING_FORMAT)
+            row["created_at"] = row["created_at"].strftime(TIME_STRING_FORMAT)
+
+            # Customise user info
+            user = run.user
+            row["user_strava_id"] = user.strava_id
+            if user.clubs:
+                row["user_intania"] = user.clubs[0].intania
+            else:
+                row["user_intania"] = ""
+
+            if user.registration and user.registration.foundation:
+                row["user_ranger"] = user.registration.foundation.name
+            else:
+                row["user_ranger"] = ""
+
+            # Filter only wanted fields
+            row = {key: row[key] for key in fieldnames if key in row}
             writer.writerow(row)
-    print("Total Runs:", len(runs))
+
+            n_run += 1
+
+    print("Total Runs:", n_run)
     print("Generated report to", report_path)
+
 
 def gen_runner_report(timestamp, report_path):
-    runners = ChallengeDB.find_runner()
+    users = ChallengeSqlDB.get_all_users()
     with open(report_path, "w", newline="") as csvfile:
-        fieldnames = ["timestamp","_id", "displayname", "intania", "createdAt"]
+        fieldnames = ["timestamp", "id",  "strava_id", "first_name",
+                      "last_name", "intania", "ranger", "created_at"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
 
         writer.writeheader()
-        for runner in runners:
-            row = runner.to_doc()
+        n_user = 0
+        for user in users:
+            row = vars(user)
             row["timestamp"] = timestamp
-            row["createdAt"] = row["createdAt"].strftime(STRING_TIME_FORMAT)
-            row = {key:row[key] for key in fieldnames}
+            row["created_at"] = row["created_at"].strftime(TIME_STRING_FORMAT)
+
+            # Customise intania and ranger fields
+            if user.clubs:
+                row["intania"] = user.clubs[0].intania
+            else:
+                row["intania"] = ""
+
+            if user.registration and user.registration.foundation:
+                row["ranger"] = user.registration.foundation.name
+            else:
+                row["ranger"] = ""
+
+            # Filter only wanted fields
+            row = {key: row[key] for key in fieldnames if key in row}
             writer.writerow(row)
-    print("Total Runners:", len(runners))
+
+            n_user += 1
+
+    print("Total Runners:", n_user)
     print("Generated report to", report_path)
+
 
 def main():
     if args.time_zone:
@@ -133,7 +238,7 @@ def main():
     else:
         now = datetime.datetime.now()
 
-    timestamp = now.strftime(STRING_TIME_FORMAT)
+    timestamp = now.strftime(TIME_STRING_FORMAT)
     report_prefix = now.strftime("%Y%m%d_%H%M%S")
     print("Report timestamp:", timestamp)
 
@@ -149,17 +254,34 @@ def main():
 
     if args.drive_cleint_config and args.drive_token and args.drive_folder_id:
         print("GDrive config is set, uploading reports to Gdrive.")
-        upload_reports(args.drive_cleint_config, args.drive_token, args.drive_folder_id, [runner_report_path, run_report_path])
+        upload_reports(args.drive_cleint_config, args.drive_token,
+                       args.drive_folder_id, [runner_report_path, run_report_path])
 
     if args.credentials:
         print("GSpread credentials is set, uploading summary to spreadsheet.")
         challenge_spread = ChallengeSpread(args.credentials)
 
-        if args.run_spread_key and args.run_sheet_name:
-            update_run_spread(challenge_spread, args.run_spread_key, args.run_sheet_name)
+        if args.run_spread_key and args.intania_run_sheet_name:
+            update_run_spread_intania(
+                challenge_spread,
+                args.run_spread_key,
+                args.intania_run_sheet_name
+            )
 
-        if args.runner_spread_key and args.runner_sheet_name:
-            update_runner_spread(challenge_spread, args.runner_spread_key, args.runner_sheet_name)
+        if args.run_spread_key and args.ranger_run_sheet_name:
+            update_run_spread_ranger(
+                challenge_spread,
+                args.run_spread_key,
+                args.ranger_run_sheet_name
+            )
+
+        if args.runner_spread_key and args.intania_runner_sheet_name:
+            update_runner_spread_intania(
+                challenge_spread,
+                args.runner_spread_key,
+                args.intania_runner_sheet_name
+            )
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -176,13 +298,16 @@ if __name__ == "__main__":
     # Spreadsheet config
     parser.add_argument("--credentials", help="GSpread credentials", action="store",
                         dest="credentials", type=str)
-    parser.add_argument("--run-spread-key", help="Spreadsheet key for run summary", action="store",
+    parser.add_argument("--run-spread-key", help="Spreadsheet key for intania & ranger run summary", action="store",
                         dest="run_spread_key", type=str)
-    parser.add_argument("--run-sheet-name", help="Worksheet name for run summary", action="store",
-                        dest="run_sheet_name", type=str)
+    parser.add_argument("--intania-run-sheet-name", help="Worksheet name for intania run summary", action="store",
+                        dest="intania_run_sheet_name", type=str)
+    parser.add_argument("--ranger-run-sheet-name", help="Worksheet name for ranger run summary", action="store",
+                        dest="ranger_run_sheet_name", type=str)
+
     parser.add_argument("--runner-spread-key", help="Spreadsheet key for runner summary", action="store",
                         dest="runner_spread_key", type=str)
-    parser.add_argument("--runner-sheet-name", help="Worksheet name for runner summary", action="store",
-                        dest="runner_sheet_name", type=str)
+    parser.add_argument("--intania-runner-sheet-name", help="Worksheet name for runner summary", action="store",
+                        dest="intania_runner_sheet_name", type=str)
     args = parser.parse_args()
     main()

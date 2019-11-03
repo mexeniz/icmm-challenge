@@ -3,7 +3,7 @@ from sqlalchemy import Column, DateTime, Date, String, Integer, BigInteger, Floa
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.declarative import declarative_base
 
-from sqlalchemy import create_engine, MetaData, Table, func
+from sqlalchemy import create_engine, MetaData, Table, func, distinct
 from sqlalchemy.orm import sessionmaker
 
 import mysql.connector
@@ -89,7 +89,6 @@ class Activity(Base):
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.utc_timestamp())
     deleted_at = Column(DateTime)
-    user_id = Column(BigInteger, ForeignKey("users.id"))
     strava_id = Column(String, unique=True)
     name = Column(String)
     start_date = Column(DateTime)
@@ -103,6 +102,9 @@ class Activity(Base):
     manual = Column(Boolean)
     promo_comment = Column(String)
     promo_multiplier = Column(Float)
+    
+    user_id = Column(BigInteger, ForeignKey("users.id"))
+    user = relationship(User)
 
 # SQL Database Connector
 # ICMM Intania Challenge & F5 Challenge 2020
@@ -178,6 +180,12 @@ class ChallengeSqlDB():
         row = sess.query(Activity).filter(Activity.strava_id == strava_id).one()
         return row
 
+    @classmethod
+    def get_all_runs(cls):
+        sess = cls.SESSION()
+        rows = sess.query(Activity).all()
+        return rows
+
     @staticmethod
     def __run_to_activity(run):
         return Activity(
@@ -202,6 +210,37 @@ class ChallengeSqlDB():
         sess.add(actvity)
         sess.commit()
     
+
+    ###########
+    # Summary
+    ###########
+    @classmethod
+    def get_summary_intania_distance(cls):
+        sess = cls.SESSION()
+        rows = sess.query(
+            IntaniaClub.intania, 
+            func.sum(Activity.distance).label('total_distance'), 
+            func.count(distinct(Activity.user_id)).label('total_user'),
+            func.count(Activity.strava_id).label('total_run')
+        ).group_by(
+            IntaniaClub
+        ).join(
+            UserClub, User, Activity
+        ).order_by(
+            IntaniaClub.intania.desc()
+        ).all()
+        return rows
+
+    @classmethod
+    def get_summary_ranger_distance(cls):
+        sess = cls.SESSION()
+        rows = sess.query(
+            Foundation.name, 
+            func.sum(Activity.distance).label('total_distance'), 
+            func.count(distinct(Activity.user_id)).label('total_user'),
+            func.count(Activity.strava_id).label('total_run')
+        ).group_by(Foundation).outerjoin(Registration, Foundation.id == Registration.foundation_id).join(User, Activity).all()
+        return rows
 
 # MongoDB Connector
 class ChallengeDB():

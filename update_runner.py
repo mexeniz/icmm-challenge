@@ -74,6 +74,9 @@ def main():
         if not (user.clubs is None or not user.clubs):
             print("%s %s is in '%s' club, skip club update..." % 
                 (user.first_name, user.last_name, user.clubs[0].name))
+        elif joined_clubs is None:
+            print("Error: failed to fetch clubs for %s %s, skip club update..." % 
+                (user.first_name, user.last_name))
         else:
             for club in joined_clubs:
         #         print("id:", club.id, "Club name:", club.name)
