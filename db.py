@@ -6,7 +6,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine, MetaData, Table, func, distinct
 from sqlalchemy.orm import sessionmaker
 
-import mysql.connector
 from pymongo import MongoClient
 
 from model import Run, Runner
