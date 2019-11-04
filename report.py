@@ -156,6 +156,8 @@ def gen_run_report(timestamp, report_path):
                       "promo_comment",
                       "promo_multiplier",
                       "user_strava_id",
+                      "user_first_name",
+                      "user_last_name",
                       "user_intania",
                       "user_ranger",
                       "created_at"
@@ -175,6 +177,8 @@ def gen_run_report(timestamp, report_path):
             # Customise user info
             user = run.user
             row["user_strava_id"] = user.strava_id
+            row["user_first_name"] = user.first_name
+            row["user_last_name"] = user.last_name
             if user.clubs:
                 row["user_intania"] = user.clubs[0].intania
             else:
