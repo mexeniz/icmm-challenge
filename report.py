@@ -35,7 +35,7 @@ class ChallengeSpread():
         # element in run_data : [intania, distance]
         worksheet = self.__get_sheet(spread_key, sheet_name)
 
-        cell_list = worksheet.range("A2:E%d" % (len(run_data + 1)))
+        cell_list = worksheet.range("A2:E%d" % (len(run_data) + 1))
         for idx, cell in enumerate(cell_list):
             i = int(idx / 5)
             j = idx % 5
