@@ -35,16 +35,13 @@ class ChallengeSpread():
         # element in run_data : [intania, distance]
         worksheet = self.__get_sheet(spread_key, sheet_name)
 
-        cell_list = worksheet.range("A2:E%d" % (len(run_data) + 1))
+        cell_list = worksheet.range("A2:D%d" % (len(run_data) + 1))
         for idx, cell in enumerate(cell_list):
-            i = int(idx / 5)
-            j = idx % 5
+            i = int(idx / 4)
+            j = idx % 4
             if j == 0:
                 print(run_data[i])
-                # Insert row number
-                element = i + 1
-            else:
-                element = run_data[i][j - 1]
+            element = run_data[i][j]
             cell.value = element
 
         # Update in batch
@@ -55,7 +52,7 @@ class ChallengeSpread():
         # element in runner_data : [no., displayname, intania]
         worksheet = self.__get_sheet(spread_key, sheet_name)
 
-        cell_list = worksheet.range("A2:D%d" % (len(runner_data)))
+        cell_list = worksheet.range("A2:D%d" % (len(runner_data) + 1))
         for idx, cell in enumerate(cell_list):
             i = int(idx / 4)
             j = idx % 4
@@ -103,9 +100,10 @@ def update_run_spread_intania(challenge_spread, spread_key, sheet_name):
     for row in rows:
         # row.total_distance type is Decimal
         run_data.append(
-            (row.intania, int(row.total_distance) / 1000.0, row.total_user, row.total_run)
+            (row.intania, int(row.total_distance) /
+             1000.0, row.total_user, row.total_run)
         )
-    
+
     challenge_spread.update_summary_run(spread_key, sheet_name, run_data)
 
 
@@ -115,7 +113,8 @@ def update_run_spread_ranger(challenge_spread, spread_key, sheet_name):
     for row in rows:
         # row.total_distance type is Decimal
         run_data.append(
-            (row.name, int(row.total_distance)/ 1000.0, row.total_user, row.total_run)
+            (row.name, int(row.total_distance) /
+             1000.0, row.total_user, row.total_run)
         )
     challenge_spread.update_summary_run(spread_key, sheet_name, run_data)
 

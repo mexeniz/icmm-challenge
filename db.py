@@ -35,7 +35,8 @@ class User(Base):
     credentials = relationship('Credential',
                         lazy='joined')
     registration_id = Column(BigInteger, ForeignKey("registrations.id"))
-    registration = relationship('Registration')
+    registration = relationship('Registration',
+                        lazy='joined')
     clubs = relationship(IntaniaClub,
                         secondary='user_clubs',
                         uselist=True,
@@ -71,7 +72,8 @@ class Registration(Base):
     race_type = Column(String)
     race_category = Column(String)
     foundation_id =  Column(BigInteger, ForeignKey('foundations.id'))
-    foundation = relationship('Foundation')
+    foundation = relationship('Foundation',
+                        lazy='joined')
     registration_id = Column(String, unique=True)
     
 class Foundation(Base):
@@ -226,7 +228,7 @@ class ChallengeSqlDB():
         ).join(
             UserClub, User, Activity
         ).order_by(
-            IntaniaClub.intania.desc()
+            IntaniaClub.intania.asc()
         ).all()
         return rows
 
