@@ -62,16 +62,19 @@ def main():
             continue
     
         print('Found refresh_token for the user ...')
-
-        client = Client()
-        # Get new access token
-        refresh_response = client.refresh_access_token(
-            client_id=CLIENT_ID, 
-            client_secret=CLIENT_SECRET, 
-            refresh_token=refresh_token)
-        # Set up user's access token and ready to fetch Strava data
-        client.access_token = refresh_response['access_token']
         
+        try:
+            client = Client()
+            # Get new access token
+            refresh_response = client.refresh_access_token(
+                client_id=CLIENT_ID, 
+                client_secret=CLIENT_SECRET, 
+                refresh_token=refresh_token)
+            # Set up user's access token and ready to fetch Strava data
+            client.access_token = refresh_response['access_token']
+        except Exception as e:
+            continue
+
         if user.clubs:
             intania = user.clubs[0].intania
         else:
@@ -82,26 +85,30 @@ def main():
         else:
             ranger_team = None
 
-        time.sleep(0.2)
+        time.sleep(0.25)
         activities = client.get_activities(
             after=CHALLENGE_START_DATE, before=CHALLENGE_END_DATE)
         print("Get activities: idx=%d/%d id=%s displayname='%s %s' intania='%s' ranger='%s'" %
               (idx + 1, n_user, user.strava_id, user.first_name, user.last_name, intania, ranger_team))
         n_run = 0
-        for act in activities:
-            if act.type != Activity.RUN:
-                continue
-            n_run += 1
-            run = Run.from_activity(act, user.id)
-            # Try to save activity to DB
-            try:
-                if ChallengeSqlDB.get_run_by_strava_id(run.strava_id) is None:
-                    # New run activity
+
+        try:
+            for act in activities:
+                if act.type not in [Activity.RUN, Activity.WALK]:
+                    continue
+                n_run += 1
+                run = Run.from_activity(act, user.id)
+                # Try to save activity to DB
+                try:
+                    if ChallengeSqlDB.get_run_by_strava_id(run.strava_id) is None:
+                        # New run activity
+                        ChallengeSqlDB.insert_run(run)
+                except Exception as e:
                     ChallengeSqlDB.insert_run(run)
-            except Exception as e:
-                ChallengeSqlDB.insert_run(run)
 
             runs.append(run)
+        except Exception as e:
+            print(e)
         print('Got run acitivities: %d' % (n_run))
     print("Total run activities: %d" % (len(runs)))
 
