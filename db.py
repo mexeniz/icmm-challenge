@@ -173,6 +173,22 @@ class ChallengeSqlDB():
         sess.commit()
 
     ###########
+    # Credential
+    ###########
+    @classmethod
+    def update_credentail_token(cls, strava_client, strava_token, strava_refresh, strava_code):
+        sess = cls.SESSION()
+        sess.query(Credential
+            ).filter(Credential.strava_client == strava_client
+            ).filter(Credential.strava_code == strava_code
+            ).update(
+            {   
+                'strava_token': strava_token,
+                'strava_refresh': strava_refresh
+            })
+        sess.commit()
+
+    ###########
     # RUN
     ###########
     @classmethod

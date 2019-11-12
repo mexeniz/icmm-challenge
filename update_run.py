@@ -52,27 +52,54 @@ def main():
                   (user.strava_id, user.first_name, user.last_name))
             continue
 
+        user_cred = None
         refresh_token = None
+        strava_user_code = None
         for cred in user.credentials:
             if cred.strava_client == CLIENT_ID:
+                user_cred = cred
                 refresh_token = cred.strava_refresh
         if refresh_token is None:
             print("Skip runner with empty credentials for client_id=%s : id=%s displayname='%s %s'" %
                   (CLIENT_ID, user.strava_id, user.first_name, user.last_name))
             continue
+        else:
+            strava_user_code = cred.strava_code
     
         print('Found refresh_token for the user ...')
         
         try:
             client = Client()
-            # Get new access token
-            refresh_response = client.refresh_access_token(
+            code_response = client.exchange_code_for_token(
                 client_id=CLIENT_ID, 
                 client_secret=CLIENT_SECRET, 
-                refresh_token=refresh_token)
-            # Set up user's access token and ready to fetch Strava data
-            client.access_token = refresh_response['access_token']
+                code=strava_user_code
+            )
+
+            current_time = time.time()
+            if code_response['expires_at'] > current_time:
+                # Token does not expire
+                client.access_token = code_response['access_token']
+                if code_response['refresh_token'] != user_cred.strava_token:
+                    # Refresh token is changed
+                    ChallengeSqlDB.update_credentail_token(
+                        CLIENT_ID,
+                        code_response['access_token'],  
+                        code_response['refresh_token'], 
+                        cred.strava_code)
+                    
+            else:
+                print('Token expired, refresh a token...')
+                # Get new access token
+                refresh_response = client.refresh_access_token(
+                    client_id=CLIENT_ID, 
+                    client_secret=CLIENT_SECRET, 
+                    refresh_token=code_response['refresh_token'])
+                # Set up user's access token and ready to fetch Strava data
+                client.access_token = refresh_response['access_token']
+
         except Exception as e:
+            print(e)
             continue
 
         if user.clubs:
