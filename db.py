@@ -102,7 +102,7 @@ class Activity(Base):
     total_elevation_gain = Column(Float)
     manual = Column(Boolean)
     promo_comment = Column(String)
-    promo_multiplier = Column(Float)
+    promo_multiplier = Column(Float, default=1.0)
     
     user_id = Column(BigInteger, ForeignKey("users.id"))
     user = relationship(User)
@@ -236,7 +236,7 @@ class ChallengeSqlDB():
         sess = cls.SESSION()
         rows = sess.query(
             IntaniaClub.intania, 
-            func.sum(Activity.distance).label('total_distance'), 
+            func.sum(Activity.distance * Activity.promo_multiplier).label('total_distance'), 
             func.count(distinct(Activity.user_id)).label('total_user'),
             func.count(Activity.strava_id).label('total_run')
         ).group_by(
