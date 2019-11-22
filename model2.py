@@ -17,6 +17,8 @@ class Run():
         self.elev_low = elev_low
         self.total_elevation_gain = total_elevation_gain
         self.manual = manual
+        self.promo_comment = None
+        self.promo_multiplier = 1.0
 
         if not created_at:
             self.created_at = datetime.datetime.now()

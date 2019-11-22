@@ -24,6 +24,16 @@ ACT_END_DATE = os.getenv("ACT_END_DATE", '2020-01-12T17:00:00Z')
 CHALLENGE_START_DATE = datetime.strptime(ACT_START_DATE, "%Y-%m-%dT%H:%M:%SZ")
 CHALLENGE_END_DATE = datetime.strptime(ACT_END_DATE, "%Y-%m-%dT%H:%M:%SZ")
 
+def adjust_run_promo(run):
+    naive_start_date = run.start_date.replace(tzinfo=None)
+    # Time in Thailand time zone
+    date_2019_11_23 = datetime.strptime('2019-11-22T17:00:00Z', "%Y-%m-%dT%H:%M:%SZ")
+    date_2019_11_24 = datetime.strptime('2019-11-24T17:00:00Z', "%Y-%m-%dT%H:%M:%SZ")
+    if naive_start_date >= date_2019_11_23 and naive_start_date < date_2019_11_24:
+        run.promo_comment = "2019-11-23 to 2019-11-24"
+        run.promo_multiplier = 2.0
+        print('Adjust promo:', run.strava_id, run.promo_comment, run.promo_multiplier)
+
 def main():
     ChallengeSqlDB.init(MYSQL_HOST, MYSQL_USERNAME,
                         MYSQL_PASSWORD, MYSQL_DB_NAME)
@@ -98,6 +108,8 @@ def main():
                     continue
                 n_run += 1
                 run = Run.from_activity(act, user.id)
+                # Adjust promo multiplier
+                adjust_run_promo(run)
                 # Try to save activity to DB
                 try:
                     if ChallengeSqlDB.get_run_by_strava_id(run.strava_id) is None:
