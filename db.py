@@ -217,7 +217,9 @@ class ChallengeSqlDB():
             elev_high=run.elev_high,
             elev_low=run.elev_low,
             total_elevation_gain=run.total_elevation_gain,
-            manual=run.manual
+            manual=run.manual,
+            promo_multiplier=run.promo_multiplier,
+            promo_comment=run.promo_comment
         )
 
     @classmethod
