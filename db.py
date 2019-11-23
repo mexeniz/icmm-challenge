@@ -238,7 +238,7 @@ class ChallengeSqlDB():
         sess = cls.SESSION()
         rows = sess.query(
             IntaniaClub.intania, 
-            func.sum(Activity.distance * Activity.promo_multiplier).label('total_distance'), 
+            func.sum(Activity.distance).label('total_distance'), 
             func.count(distinct(Activity.user_id)).label('total_user'),
             func.count(Activity.strava_id).label('total_run')
         ).group_by(
@@ -255,7 +255,7 @@ class ChallengeSqlDB():
         sess = cls.SESSION()
         rows = sess.query(
             Foundation.name, 
-            func.sum(Activity.distance).label('total_distance'), 
+            func.sum(Activity.distance * Activity.promo_multiplier).label('total_distance'),
             func.count(distinct(Activity.user_id)).label('total_user'),
             func.count(Activity.strava_id).label('total_run')
         ).group_by(Foundation).outerjoin(Registration, Foundation.id == Registration.foundation_id).join(User, Activity).all()
